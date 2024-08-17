@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 import secrets
 from cryptography.fernet import Fernet 
-
+from django.contrib.auth.hashers import check_password,make_password
 
 
 # Create your views here.
@@ -28,24 +28,38 @@ def signindatalist(request):
             user_data['token']=token
 
             #Encryp password
-            key=Fernet.generate_key()
-            fernet=Fernet(key)
-            encrypt_value=fernet.encrypt(b"user_data['password']")
-            user_data['password']=encrypt_value
-            print(encrypt_value)
             
+            
+            hashed_password = make_password(user_data['password'])
+            user_data['password'] = hashed_password
+         
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+
 class logindatalist(APIView):
     def post(self, request):
-        email=request.data.get('email')
-        login_email=Useraccount.objects.filter(email=email)
-        print(email)
-        encrypted_value=Useraccount.password
-        decrypted_password = fernet.decrypt(encrypted_value).decode()
-        print(decrypted_password)
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        try:
+           
+            user = Useraccount.objects.get(email=email)
+        except Useraccount.DoesNotExist:
+           
+            return Response({'error': 'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
+        if check_password(password, user.password):
+           
+            token = secrets.token_hex(16)
+            user.token = token
+            user.save() 
+            
+            return Response({'message': 'Login successful', 'token': token}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
+
 class signindataget(APIView):
     def get(self, request, id):
 
