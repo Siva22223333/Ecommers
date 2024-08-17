@@ -9,10 +9,12 @@ from rest_framework.views import APIView
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 import secrets
-from cryptography.fernet import Fernet  
+from cryptography.fernet import Fernet 
+
+
 
 # Create your views here.
-ENCRYPTION_KEY = b'your_actual_base64_encoded_key_here'
+
 
 @api_view(['POST'])
 def signindatalist(request):
@@ -27,31 +29,23 @@ def signindatalist(request):
 
             #Encryp password
             key=Fernet.generate_key()
-            fernet=Fernet(ENCRYPTION_KEY)
-            password=user_data['password']
-            encrypted_password=fernet.encrypt(password.encode())
-            user_data['password'] = encrypted_password
-
-
-            serializer.save()
+            fernet=Fernet(key)
+            encrypt_value=fernet.encrypt(b"user_data['password']")
+            user_data['password']=encrypt_value
+            print(encrypt_value)
+            
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class logindatalist(APIView):
-    def post(self,request):
-        serializer=SignInSerializer(data=request.data)
-        if serializer.is_valid():
-            user_data=serializer.validated_data
-            fernet=Fernet(ENCRYPTION_KEY)
-            encrypted_password = user_data.get('password')
-            decrypted_password=fernet.decrypt(password).decode()
-            print(decrypted_password)
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
+    def post(self, request):
+        email=request.data.get('email')
+        login_email=Useraccount.objects.filter(email=email)
+        print(email)
+        encrypted_value=Useraccount.password
+        decrypted_password = fernet.decrypt(encrypted_value).decode()
+        print(decrypted_password)
 class signindataget(APIView):
     def get(self, request, id):
 
